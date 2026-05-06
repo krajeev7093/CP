@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 import streamlit as st
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MinMaxScaler
@@ -196,9 +197,20 @@ def load_mobile_data():
     df["Brand"] = df["Brand"].astype(str).str.title()
     df["Rear Camera"] = df["Rear Camera"].astype(str).str.extract(r"(\d+)").astype(float)
     df["Front Camera"] = df["Front Camera"].astype(str).str.extract(r"(\d+)").astype(float)
-    df["Processor Score"] = pd.to_numeric(df.get("processor_speed_Hz"), errors="coerce")
-    df["Fast Charging"] = df.get("fast_charging", False).apply(parse_bool)
-    df["5G"] = df["5G"].apply(parse_bool)
+    if "processor_speed_Hz" in df.columns:
+        df["Processor Score"] = pd.to_numeric(df["processor_speed_Hz"], errors="coerce")
+    else:
+        df["Processor Score"] = pd.Series(np.nan, index=df.index, dtype=float)
+
+    if "fast_charging" in df.columns:
+        df["Fast Charging"] = df["fast_charging"].apply(parse_bool)
+    else:
+        df["Fast Charging"] = pd.Series(0, index=df.index, dtype=int)
+
+    if "5G" in df.columns:
+        df["5G"] = df["5G"].apply(parse_bool)
+    else:
+        df["5G"] = pd.Series(0, index=df.index, dtype=int)
 
     numeric_cols = [
         "RAM",
@@ -880,11 +892,19 @@ st.session_state.dark_mode = st.sidebar.toggle(
     value=st.session_state.dark_mode,
 )
 apply_theme(st.session_state.dark_mode)
-px.defaults.template = "plotly_dark" if st.session_state.dark_mode else "plotly"
+pio.templates.default = "plotly_dark" if st.session_state.dark_mode else "plotly"
 
 st.title("Smart Product Recommendation System")
 
 product_type = st.sidebar.radio("Product dataset", ["Phone", "Laptop", "Drone"], horizontal=True)
+assert product_type in {"Phone", "Laptop", "Drone"}
+
+ram = storage = battery = refresh_rate = camera = max_weight = 0
+screen_min = screen_max = 0.0
+fiveg = dedicated_gpu = touchscreen = obstacle_avoidance = gps_required = gimbal_required = foldable_required = False
+min_video = ""
+flight_time = min_range = max_speed = 0
+
 df = {"Phone": mobile_df, "Laptop": laptop_df, "Drone": drone_df}[product_type]
 
 if product_type == "Phone":
