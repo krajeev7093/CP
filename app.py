@@ -1028,7 +1028,14 @@ user_query = st.sidebar.text_input(
 )
 
 filtered_df = df.copy()
-filtered_df = filtered_df[(filtered_df["Price"] >= price_min) & (filtered_df["Price"] <= price_max)]
+
+effective_price_max = price_max
+if user_query:
+    query_price = extract_price_from_query(user_query)
+    if query_price:
+        effective_price_max = max(price_max, query_price)
+
+filtered_df = filtered_df[(filtered_df["Price"] >= price_min) & (filtered_df["Price"] <= effective_price_max)]
 
 if brand != "All":
     filtered_df = filtered_df[filtered_df["Brand"] == brand]
